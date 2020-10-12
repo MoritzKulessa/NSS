@@ -5,7 +5,6 @@ file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../"
 sys.path.append(file_dir)
 
 import numpy as np
-
 from data.data_stream import WSARE_DATA
 from data.syndrome_counting import BasicSyndromeCounting
 from algo.wsare import WSARE

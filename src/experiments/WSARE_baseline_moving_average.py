@@ -9,7 +9,6 @@ from data.data_stream import WSARE_DATA
 from algo.baselines import MovingAverage
 from evaluation import measures
 from util import io
-
 import logging
 
 logger = logging.getLogger(__name__)

@@ -10,7 +10,6 @@ from data.syndrome_counting import BasicSyndromeCounting
 from algo.syndromic_surveillance import EARS
 from evaluation import measures
 from util import io
-
 import logging
 
 logger = logging.getLogger(__name__)
