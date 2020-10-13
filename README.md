@@ -19,6 +19,10 @@ an installation of R is required. For R the following package need to be install
 install.packages("surveillance")
 ```
 
+## Data
+The WSARE data can be downloaded 
+[here](https://web.archive.org/web/20150920104314/http://www.autonlab.org/auton_static/datsets/wsare/wsare3data.zip)
+and should be placed in the folder `_data.wsare`.
 
 
 ## Citation

@@ -1,0 +1,1 @@
+From: https://web.archive.org/web/20150920104314/http://www.autonlab.org/auton_static/datsets/wsare/wsare3data.zip
