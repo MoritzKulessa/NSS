@@ -24,5 +24,3 @@ install.packages("surveillance")
 ## Citation
 Coming soon
 
-##Acknowledgements
-Coming soon
