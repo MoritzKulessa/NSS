@@ -1,7 +1,7 @@
 # Non-Specific Syndromic Surveillance
 
 ## Installation
-Packages using pip:
+This project is written in Python 3.7 and R. The Python packages can be installed by using pip:
 ```sh
 pip install numpy
 pip install pandas
