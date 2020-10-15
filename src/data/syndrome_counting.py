@@ -52,36 +52,32 @@ class BasicSyndromeCounting:
     ***********************************************************************************************************
     '''
 
-    def update_syndrome_counts(self, first_time_slot, last_time_slot):
+    def update_cache(self, time_slot_or_set_of_time_slots):
         """
         Updates the syndrome count dataframe with the specified range of time slots (last time slot is inclusive). 
         The updated version is saved to the file system.
-        :param first_time_slot: the first time slot
-        :param last_time_slot: the last time slot (inclusive)
+        :param time_slot_or_set_of_time_slots: a time slot or a set of time slots
         """
+
+        time_slot_set = set(time_slot_or_set_of_time_slots)
 
         # Generate syndrome counts
         time_slots = []
         syndrome_counts = []
-        for i in range(first_time_slot, last_time_slot + 1):
-
-            # skip already computed time slots
-            if (np.sum(self.syndrome_df["time_slot"] == i) > 0): continue
-
-            # Compute syndrome counts
+        for i in time_slot_set:
             time_slots.append(i)
             syndrome_counts.append(self.count_syndromes(self.data_stream.get_cases(i)))
+            self.syndrome_df = self.syndrome_df[self.syndrome_df["time_slot"] != i]
 
-        if len(syndrome_counts) > 0:
-            # create dataframe for syndrome counts of the new time slots
-            new_syndromes_df = pd.DataFrame(syndrome_counts)
-            new_syndromes_df["time_slot"] = time_slots
+        # create dataframe for syndrome counts of the new time slots
+        new_syndromes_df = pd.DataFrame(syndrome_counts)
+        new_syndromes_df["time_slot"] = time_slots
 
-            # add new syndrome counts
-            self.syndrome_df = pd.concat([self.syndrome_df, new_syndromes_df])
-            self.syndrome_df = self.syndrome_df.fillna(0)
-            self.syndrome_df = self.syndrome_df.sort_values("time_slot")
-            self.syndrome_df.to_pickle(self.cache_path)
+        # add new syndrome counts
+        self.syndrome_df = pd.concat([self.syndrome_df, new_syndromes_df])
+        self.syndrome_df = self.syndrome_df.fillna(0)
+        self.syndrome_df = self.syndrome_df.sort_values("time_slot")
+        self.syndrome_df.to_pickle(self.cache_path)
 
     '''
     ***********************************************************************************************************
@@ -95,10 +91,11 @@ class BasicSyndromeCounting:
         :param time_slot: the time slot for which the syndrome counts should be returned
         :return: a dataframe with one row containing the syndrome counts (columns = syndromes, row = the counts for the respective syndrome)
         """
-        if np.sum(self.syndrome_df["time_slot"] == time_slot) == 0:
-            self.update_syndrome_counts(time_slot, time_slot)
-        ts_syndrome_df = self.syndrome_df[self.syndrome_df["time_slot"] == time_slot]
-        return ts_syndrome_df.drop(['time_slot'], axis=1)
+        if time_slot not in set(self.syndrome_df["time_slot"]):
+            self.update_cache(time_slot)
+        selected_syndrome_df = self.syndrome_df[self.syndrome_df["time_slot"] == time_slot]
+        assert (len(selected_syndrome_df) == 1)
+        return selected_syndrome_df.drop(['time_slot'], axis=1)
 
     def get_syndrome_df(self, time_slot_start, time_slot_end):
         """
@@ -107,11 +104,17 @@ class BasicSyndromeCounting:
         :param time_slot_end: the last time slot (inclusive)
         :return: a dataframe containing the syndrome counts (columns = time slot + syndromes, rows = the syndrome counts for the respective time slot)
         """
-        if (np.sum(self.syndrome_df["time_slot"] == time_slot_start) == 0) or (
-                np.sum(self.syndrome_df["time_slot"] == time_slot_end) == 0):
-            self.update_syndrome_counts(time_slot_start, time_slot_end)
-        return self.syndrome_df[np.logical_and(self.syndrome_df["time_slot"] >= time_slot_start,
-                                               self.syndrome_df["time_slot"] <= time_slot_end)]
+        time_slots = set(range(time_slot_start, time_slot_end + 1))
+        available_time_slots = set(self.syndrome_df["time_slot"])
+        missing_time_slots = time_slots.difference(available_time_slots)
+        if len(missing_time_slots) > 0:
+            self.update_cache(missing_time_slots)
+
+        selected_syndrome_df = self.syndrome_df[np.logical_and(self.syndrome_df["time_slot"] >= time_slot_start,
+                                                               self.syndrome_df["time_slot"] <= time_slot_end)]
+
+        assert(len(selected_syndrome_df) == time_slot_end - time_slot_start + 1)
+        return selected_syndrome_df
 
     '''
     ***********************************************************************************************************
