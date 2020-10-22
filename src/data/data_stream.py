@@ -21,7 +21,7 @@ class WSARE_DATA:
 
     def _load_data(self):
         """
-        Loads the data of 5teh stream from the file system.
+        Loads the data of stream from the file system.
         """
         path = io.get_project_directory() + "_data/wsare/"
 
@@ -35,6 +35,15 @@ class WSARE_DATA:
         self.cases_df = df[["time_slot", "XY", "age", "gender", "action", "reported_symptom", "drug"]]
         environmentals = df[["time_slot", "flu", "day_of_week", "weather", "season"]]
         self.environmental_df = environmentals.drop_duplicates()
+
+        #prepare history
+        self.history = []
+        for time_slot in range(np.min(df["time_slot"]), np.max(df["time_slot"])):
+            ts_cases_df = self.cases_df[self.cases_df["time_slot"] == time_slot]
+            ts_cases_df = ts_cases_df.drop(['time_slot'], axis=1)
+            ts_environmental_df = self.environmental_df[self.environmental_df["time_slot"] == time_slot]
+            ts_environmental_df = ts_environmental_df.drop(['time_slot'], axis=1)
+            self.history.append([ts_cases_df, ts_environmental_df])
 
         # read extract information about the outbreak
         f = open(path + "release_daycode.txt", "r")
@@ -57,8 +66,7 @@ class WSARE_DATA:
         :param time_slot: the time slot for which the cases should be returned
         :return: a dataframe containing the cases for the specified time slot 
         """
-        ts_cases_df = self.cases_df[self.cases_df["time_slot"] == time_slot]
-        return ts_cases_df.drop(['time_slot'], axis=1)
+        return self.history[time_slot][0]
 
     def get_all_cases(self):
         """
@@ -73,8 +81,7 @@ class WSARE_DATA:
         :param time_slot: the time slot for which the environmental setting should be returned
         :return: a dataframe containing the environmental setting for the specified time slot 
         """
-        ts_environmental_df = self.environmental_df[self.environmental_df["time_slot"] == time_slot]
-        return ts_environmental_df.drop(['time_slot'], axis=1)
+        return self.history[time_slot][1]
 
     def get_all_envs(self):
         """
@@ -90,7 +97,7 @@ class WSARE_DATA:
         :param time_slot_end: the last time slot of the history (inclusive)
         :return: a list containing the information for the specified range of time slots [[cases_{time_slot_start}, env_{time_slot_start}], ..., [cases_{time_slot_end}, env_{time_slot_end}]] 
         """
-        return [[self.get_cases(i), self.get_env(i)] for i in range(time_slot_start, time_slot_end + 1)]
+        return self.history[time_slot_start:time_slot_end+1]
 
     def get_info(self):
         """
