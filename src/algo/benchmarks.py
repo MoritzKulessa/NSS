@@ -40,8 +40,8 @@ class Benchmark:
 
         # obtain previous and current syndrome counts
         first_time_slot = self.syndrome_counter.data_stream.get_info()["first_time_slot"]
-        syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, time_slot - 1)
-        check_syndrome_counts = self.syndrome_counter.get_counts(time_slot)
+        syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, time_slot)
+        assert(syndrome_counts_df.iloc[-1]["time_slot"] == time_slot) #assume that the syndrome counts df is sorted
 
         # Load the total number of cases for the previous time slots and the current time slot for the fisher benchmark
         if self.distribution == "fisher":
@@ -51,16 +51,15 @@ class Benchmark:
 
         # Compute for every observed syndrome of the current time slot a p-value
         p_vals = []
-        for syndrome_name in check_syndrome_counts.columns:
-
-            # skip if syndrome has not been seen before
-            if syndrome_name not in syndrome_counts_df: continue
-
-            # obtain count of syndrome for current time slot
-            check_val = check_syndrome_counts.iloc[0][syndrome_name]
+        for i in range(syndrome_counts_df.values.shape[1]):
 
             # obtain previous counts
-            train_counts = syndrome_counts_df[syndrome_name]
+            counts = syndrome_counts_df.values[:, i]
+            train_counts = counts[:-1]
+            check_val = counts[-1]
+
+            if check_val == 0:
+                continue
 
             if self.distribution == "gaussian":
                 avg_train = np.mean(train_counts)
