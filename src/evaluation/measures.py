@@ -29,6 +29,27 @@ def _get_ground_truth(outbreaks, size):
 '''
 
 
+def evaluate_results(results):
+
+    macro_amoc_auc5 = []
+    for result in results:
+
+        # Compute area under partial AMOC-curve (FAR <= 5%)
+        roc_values = compute_roc_values(result["scores"], result["outbreaks"])
+        amoc_auc5 = compute_area_under_curve(roc_values, x_measure="FAR*0.05", y_measure="detectionDelay")
+        macro_amoc_auc5.append(amoc_auc5)
+
+    return {"macro-averaged parital AMOC 5%": np.mean(macro_amoc_auc5)}
+
+
+
+'''
+***********************************************************************************************************
+***********************************************************************************************************
+***********************************************************************************************************
+'''
+
+
 def compute_roc_values(scores, outbreaks):
     """
     Computes the receiver operating characteristics for the given scores and outbreaks. 

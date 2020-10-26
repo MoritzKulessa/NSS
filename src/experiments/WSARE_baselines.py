@@ -4,11 +4,11 @@ import sys
 file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../"
 sys.path.append(file_dir)
 
-import numpy as np
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
-from algo.dmss import DMSS
+
+from algo.baselines import ControlChart, MovingAverage, LinearRegression
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,21 +22,13 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         data_stream_ids = [int(sys.argv[1])]
     else:
-        data_stream_ids = range(0, 100)
+        data_stream_ids = range(0, 2)
 
     # the settings for the algorithms
     algo_settings = [
-        [DMSS, {"min_support_set": 3, "min_support_rule": 3, "ref_windows": np.arange(-30, 0)}],
-        [DMSS, {"min_support_set": 3, "min_support_rule": 3, "ref_windows": np.arange(-30, 0)}],
-        [DMSS, {"min_support_set": 3, "min_support_rule": 3, "ref_windows": np.arange(-30, 0)}],
-
-        [DMSS, {"min_support_set": 5, "min_support_rule": 5, "ref_windows": np.arange(-90, 0)}],
-        [DMSS, {"min_support_set": 5, "min_support_rule": 5, "ref_windows": np.arange(-90, 0)}],
-        [DMSS, {"min_support_set": 5, "min_support_rule": 5, "ref_windows": np.arange(-90, 0)}],
-
-        [DMSS, {"min_support_set": 7, "min_support_rule": 7, "ref_windows": np.arange(-180, 0)}],
-        [DMSS, {"min_support_set": 7, "min_support_rule": 7, "ref_windows": np.arange(-180, 0)}],
-        [DMSS, {"min_support_set": 7, "min_support_rule": 7, "ref_windows": np.arange(-180, 0)}]
+        [ControlChart, {}],
+        [MovingAverage, {}],
+        #[LinearRegression, {}]
     ]
 
     # the settings for the syndrome counters
@@ -54,4 +46,4 @@ if __name__ == '__main__':
     )
 
     # print results
-    io.print_pretty_table(df[["algo_params", "macro-averaged parital AMOC 5%"]])
+    io.print_pretty_table(df[["algo_class", "macro-averaged parital AMOC 5%"]])

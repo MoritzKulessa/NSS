@@ -9,15 +9,14 @@ from util import io
 
 class WSARE(object):
 
-    def __init__(self, data_stream, syndrome_counter, version="2.0", randomization=10):
+    def __init__(self, syndrome_counter, version="2.0", randomization=10):
         """
         Initialize
-        :param data_stream: the module to access data
         :param syndrome_counter: the module producing syndrome counts
         :param version: the algorithm used to generate the reference set ("2.0" for WSARE 2.0, "2.5" for WSARE 2.5, and "3.0" for WSARE 3.0)
         :param randomization: the number of iterations for the randomization test, if randomization is None then the minimal p-value is reported 
         """
-        self.data_stream = data_stream
+        self.data_stream = syndrome_counter.data_stream
         self.syndrome_counter = syndrome_counter
         self.version = version
         self.randomization = randomization

@@ -42,6 +42,7 @@ class Benchmark:
         first_time_slot = self.syndrome_counter.data_stream.get_info()["first_time_slot"]
         syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, time_slot)
         assert(syndrome_counts_df.iloc[-1]["time_slot"] == time_slot) #assume that the syndrome counts df is sorted
+        syndrome_counts_df = syndrome_counts_df.drop("time_slot", axis=1)
 
         # Load the total number of cases for the previous time slots and the current time slot for the fisher benchmark
         if self.distribution == "fisher":

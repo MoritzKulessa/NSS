@@ -38,7 +38,7 @@ class WSARE_DATA:
 
         #prepare history
         self.history = []
-        for time_slot in range(np.min(df["time_slot"]), np.max(df["time_slot"])):
+        for time_slot in range(np.min(df["time_slot"]), np.max(df["time_slot"])+1):
             ts_cases_df = self.cases_df[self.cases_df["time_slot"] == time_slot]
             ts_cases_df = ts_cases_df.drop(['time_slot'], axis=1)
             ts_environmental_df = self.environmental_df[self.environmental_df["time_slot"] == time_slot]

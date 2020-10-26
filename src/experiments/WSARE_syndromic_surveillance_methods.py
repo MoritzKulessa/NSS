@@ -4,11 +4,11 @@ import sys
 file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../"
 sys.path.append(file_dir)
 
-import numpy as np
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
-from algo.dmss import DMSS
+from data.syndrome_counting import BasicSyndromeCounting
+from algo.syndromic_surveillance import EARS, RKI, Bayes
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,23 +25,18 @@ if __name__ == '__main__':
         data_stream_ids = range(0, 100)
 
     # the settings for the algorithms
-    algo_settings = [
-        [DMSS, {"min_support_set": 3, "min_support_rule": 3, "ref_windows": np.arange(-30, 0)}],
-        [DMSS, {"min_support_set": 3, "min_support_rule": 3, "ref_windows": np.arange(-30, 0)}],
-        [DMSS, {"min_support_set": 3, "min_support_rule": 3, "ref_windows": np.arange(-30, 0)}],
+    algo_settings = []
+    for window_size in [7]:
+        algo_settings.append([EARS, {"method": "C1", "window_size": window_size}])
+        algo_settings.append([EARS, {"method": "C2", "window_size": window_size}])
+        algo_settings.append([EARS, {"method": "C3", "window_size": window_size}])
+        algo_settings.append([Bayes, {"window_size": window_size}])
+        algo_settings.append([RKI, {"window_size": window_size}])
 
-        [DMSS, {"min_support_set": 5, "min_support_rule": 5, "ref_windows": np.arange(-90, 0)}],
-        [DMSS, {"min_support_set": 5, "min_support_rule": 5, "ref_windows": np.arange(-90, 0)}],
-        [DMSS, {"min_support_set": 5, "min_support_rule": 5, "ref_windows": np.arange(-90, 0)}],
-
-        [DMSS, {"min_support_set": 7, "min_support_rule": 7, "ref_windows": np.arange(-180, 0)}],
-        [DMSS, {"min_support_set": 7, "min_support_rule": 7, "ref_windows": np.arange(-180, 0)}],
-        [DMSS, {"min_support_set": 7, "min_support_rule": 7, "ref_windows": np.arange(-180, 0)}]
-    ]
 
     # the settings for the syndrome counters
     syndrome_counter_settings = [
-        [None, {}]
+        [BasicSyndromeCounting, {}]
     ]
 
     # perform evaluation
@@ -54,4 +49,4 @@ if __name__ == '__main__':
     )
 
     # print results
-    io.print_pretty_table(df[["algo_params", "macro-averaged parital AMOC 5%"]])
+    io.print_pretty_table(df[["algo_class", "macro-averaged parital AMOC 5%"]])
