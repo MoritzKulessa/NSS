@@ -8,7 +8,6 @@ import numpy as np
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
-
 from data.syndrome_counting import BasicSyndromeCounting
 from algo.benchmarks import Benchmark
 import logging

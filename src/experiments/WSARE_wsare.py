@@ -7,7 +7,6 @@ sys.path.append(file_dir)
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
-
 from data.syndrome_counting import BasicSyndromeCounting
 from algo.wsare import WSARE
 import logging
@@ -23,16 +22,16 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         data_stream_ids = [int(sys.argv[1])]
     else:
-        data_stream_ids = range(0, 1)
+        data_stream_ids = range(0, 100)
 
     # the settings for the algorithms
     algo_settings = [
         [WSARE, {"version": "2.0", "randomization": None}],
-        # [WSARE, {"version": "2.5", "randomization": None}],
-        # [WSARE, {"version": "3.0", "randomization": None}],
-        # [WSARE, {"version": "2.0", "randomization": 1000}],
-        # [WSARE, {"version": "2.5", "randomization": 1000}],
-        # [WSARE, {"version": "3.0", "randomization": 1000}],
+        [WSARE, {"version": "2.5", "randomization": None}],
+        [WSARE, {"version": "3.0", "randomization": None}],
+        [WSARE, {"version": "2.0", "randomization": 1000}],
+        [WSARE, {"version": "2.5", "randomization": 1000}],
+        [WSARE, {"version": "3.0", "randomization": 1000}],
     ]
 
     # the settings for the syndrome counters

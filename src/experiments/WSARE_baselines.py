@@ -7,7 +7,6 @@ sys.path.append(file_dir)
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
-
 from algo.baselines import ControlChart, MovingAverage, LinearRegression
 import logging
 
@@ -22,13 +21,13 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         data_stream_ids = [int(sys.argv[1])]
     else:
-        data_stream_ids = range(0, 2)
+        data_stream_ids = range(0, 100)
 
     # the settings for the algorithms
     algo_settings = [
         [ControlChart, {}],
         [MovingAverage, {}],
-        #[LinearRegression, {}]
+        [LinearRegression, {}]
     ]
 
     # the settings for the syndrome counters
