@@ -52,14 +52,12 @@ class BasicSyndromeCounting:
     ***********************************************************************************************************
     '''
 
-    def update_cache(self, time_slot_or_set_of_time_slots):
+    def update_cache(self, time_slot_set):
         """
         Updates the syndrome count dataframe with the specified range of time slots (last time slot is inclusive). 
         The updated version is saved to the file system.
-        :param time_slot_or_set_of_time_slots: a time slot or a set of time slots
+        :param set_of_time_slots: a set of time slots
         """
-
-        time_slot_set = set(time_slot_or_set_of_time_slots)
 
         # Generate syndrome counts
         time_slots = []
@@ -92,7 +90,7 @@ class BasicSyndromeCounting:
         :return: a dataframe with one row containing the syndrome counts (columns = syndromes, row = the counts for the respective syndrome)
         """
         if time_slot not in set(self.syndrome_df["time_slot"]):
-            self.update_cache(time_slot)
+            self.update_cache(set([time_slot]))
         selected_syndrome_df = self.syndrome_df[self.syndrome_df["time_slot"] == time_slot]
         assert (len(selected_syndrome_df) == 1)
         return selected_syndrome_df.drop(['time_slot'], axis=1)
