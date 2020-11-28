@@ -1,13 +1,14 @@
 import os
 import sys
 
-file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../"
+file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../../"
 sys.path.append(file_dir)
 
+import numpy as np
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
-from algo.baselines import ControlChart, MovingAverage, LinearRegression
+from algo.dmss import DMSS
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,12 +24,15 @@ if __name__ == '__main__':
     else:
         data_stream_ids = range(0, 100)
 
+    ref_windows = [np.arange(-30, 0), np.arange(-90, 0), np.arange(-180, 0)]
+    min_supports = [3, 5, 7, 9, 11, 13, 15]
+
     # the settings for the algorithms
-    algo_settings = [
-        [ControlChart, {}],
-        [MovingAverage, {}],
-        [LinearRegression, {}]
-    ]
+    algo_settings = []
+    for ref_window in ref_windows:
+        for min_support in min_supports:
+            algo_settings.append(
+                [DMSS, {"min_support_set": min_support, "min_support_rule": min_support, "ref_windows": ref_window}])
 
     # the settings for the syndrome counters
     syndrome_counter_settings = [
@@ -45,4 +49,4 @@ if __name__ == '__main__':
     )
 
     # print results
-    io.print_pretty_table(df[["algo_class", "macro-averaged parital AMOC 5%"]])
+    io.print_pretty_table(df[["algo_params", "macro-averaged parital AMOC 5%"]])

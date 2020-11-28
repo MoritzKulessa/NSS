@@ -138,3 +138,29 @@ class LinearRegression(object):
         # Compute score
         score = 1 - p_value
         return score
+
+
+'''
+***********************************************************************************************************
+***********************************************************************************************************
+***********************************************************************************************************
+'''
+
+
+class RandomScore(object):
+
+    def __init__(self, data_stream, random_seed=0):
+        """
+        Initialize
+        :param data_stream: the module to access data
+        """
+        self.data_stream = data_stream
+        self.random_generator = np.random.RandomState(random_seed)
+
+    def evaluate(self, time_slot):
+        """
+        Computes the score for the given time slot.
+        :param time_slot: the time slot for which the score is computed
+        :return: the score for the given time slot
+        """
+        return self.random_generator.random()

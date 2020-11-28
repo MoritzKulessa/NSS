@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import pyAgrum as gum
 from scipy import stats
-
 from util import io
 
 
@@ -13,8 +12,10 @@ class WSARE(object):
         """
         Initialize
         :param syndrome_counter: the module producing syndrome counts
-        :param version: the algorithm used to generate the reference set ("2.0" for WSARE 2.0, "2.5" for WSARE 2.5, and "3.0" for WSARE 3.0)
-        :param randomization: the number of iterations for the randomization test, if randomization is None then the minimal p-value is reported 
+        :param version: the algorithm used to generate the reference set ("2.0" for WSARE 2.0, "2.5" for WSARE 2.5, and
+        "3.0" for WSARE 3.0)
+        :param randomization: the number of iterations for the randomization test, if randomization is None then the
+        minimal p-value is reported
         """
         self.data_stream = syndrome_counter.data_stream
         self.syndrome_counter = syndrome_counter
@@ -42,7 +43,8 @@ class WSARE(object):
 
     def _obtain_reference_set_WSARE25(self, time_slot):
         """
-        Returns the reference set according to the WSARE 2.5 algorithm. If no cases with the same environmental setting can be found return an empty dataframe.
+        Returns the reference set according to the WSARE 2.5 algorithm. If no cases with the same environmental setting
+        can be found return an empty dataframe.
         :param time_slot: the time slot for which the reference sets needs to be generated
         :return: a dataframe containing cases
         """
@@ -54,8 +56,8 @@ class WSARE(object):
 
         ref_dfs = []
         for (cases_df, env_df) in history:
-            if all(cur_env.iloc[0] == env_df.iloc[0]):
-                ref_dfs.append(cases_df)
+            if (len(cur_env) == 0) or all(cur_env.iloc[0] == env_df.iloc[0]):
+                ref_dfs.append(cases_df.copy())
 
         if len(ref_dfs) > 0:
             return pd.concat(ref_dfs)
@@ -80,9 +82,11 @@ class WSARE(object):
         # create dataframe for training which contains all cases (including the environmental setting for each case)
         train_dfs = []
         for (cases_df, env_df) in history:
-            for col_name, val in env_df.iloc[0].items():
-                cases_df[col_name] = [val] * len(cases_df)
-            train_dfs.append(cases_df)
+            x = cases_df.copy()
+            if not env_df.empty:
+                for col_name, val in env_df.iloc[0].items():
+                    x[col_name] = [val] * len(x)
+            train_dfs.append(x)
         train_df = pd.concat(train_dfs)
 
         # write temporarily to disk, because pyAgrum learns from disk
@@ -105,8 +109,9 @@ class WSARE(object):
         bn = learner.learnBN()
 
         '''
-        Unfortunately pyAgrum does not allow to sample with evidence, therefore we have adapted the structure of the bayesian entwork with 
-        respect to the environmental setting of the current evaluated time slot and then used the "generateCSV" method to obtain the samples.
+        Unfortunately pyAgrum does not allow to sample with evidence, therefore we have adapted the structure of the 
+        bayesian network with respect to the environmental setting of the current evaluated time slot and then used the 
+        "generateCSV" method to obtain the samples.
         '''
         for env_col in cur_env.columns:
 
@@ -119,7 +124,8 @@ class WSARE(object):
                 prob = float(splitted[1])
                 entry = splitted[0].strip()[1:-1]
 
-                # only allow a probability for the entry in the bayesian node, if all the condition for the entry match the environmental setting
+                # only allow a probability for the entry in the bayesian node, if all the condition for the entry match
+                # the environmental setting
                 new_prob = prob
                 if "|" in splitted[0]:
                     for cond in entry.split("|"):
@@ -184,7 +190,8 @@ class WSARE(object):
 
     def _compute_score(self, time_slot, reference_df):
         """
-        Compute the score for the cases of the current time slot given the cases of the reference set. If configured a randomization test is performed which might be slow.
+        Compute the score for the cases of the current time slot given the cases of the reference set. If configured a
+        randomization test is performed which might be slow.
         :param time_slot: the time slot which is evaluated
         :param reference_df: a dataframe which contains the cases of the reference set
         :return: the score for the given time slot
@@ -258,5 +265,4 @@ class WSARE(object):
 
         # compute the score
         score = self._compute_score(time_slot, reference_df)
-
         return score

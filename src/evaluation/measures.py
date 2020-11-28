@@ -30,9 +30,17 @@ def _get_ground_truth(outbreaks, size):
 
 
 def evaluate_results(results):
-
+    """
+    Computes the measurements for the given results.
+    :param results: an array of results. Each result is a dictionary containing the scores and outbreaks
+    :return: a dictionary, containing the name of the measure as the key and the measure-value as the value
+    """
     macro_amoc_auc5 = []
     for result in results:
+
+        if len(result["outbreaks"]) == 0:
+            macro_amoc_auc5.append(np.nan)
+            continue
 
         # Compute area under partial AMOC-curve (FAR <= 5%)
         roc_values = compute_roc_values(result["scores"], result["outbreaks"])
@@ -40,7 +48,6 @@ def evaluate_results(results):
         macro_amoc_auc5.append(amoc_auc5)
 
     return {"macro-averaged parital AMOC 5%": np.mean(macro_amoc_auc5)}
-
 
 
 '''
@@ -127,7 +134,7 @@ def compute_area_under_curve(roc_values, x_measure, y_measure):
         prev_y_val = y_vals[index_limit - 1]
         next_y_val = y_vals[index_limit]
         intermediate_y_val = ((x_limit - prev_x_val) / (next_x_val - prev_x_val)) * (
-                    next_y_val - prev_y_val) + prev_y_val
+                next_y_val - prev_y_val) + prev_y_val
 
         limit_x_vals = list(x_vals[:index_limit]) + [x_limit]
         limit_y_vals = list(y_vals[:index_limit]) + [intermediate_y_val]

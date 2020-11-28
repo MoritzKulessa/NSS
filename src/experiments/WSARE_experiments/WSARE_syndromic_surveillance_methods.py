@@ -1,14 +1,14 @@
 import os
 import sys
 
-file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../"
+file_dir = os.path.dirname(os.path.realpath(__file__)) + "/../../"
 sys.path.append(file_dir)
 
 from util import io
 from evaluation import evaluation_engine
 from data.data_stream import WSARE_DATA
 from data.syndrome_counting import BasicSyndromeCounting
-from algo.benchmarks import Benchmark
+from algo.syndromic_surveillance import EARS, RKI, Bayes
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,16 +25,19 @@ if __name__ == '__main__':
         data_stream_ids = range(0, 100)
 
     # the settings for the algorithms
-    algo_settings = [
-        [Benchmark, {"distribution": "gaussian", "min_parameter": 1}],
-        [Benchmark, {"distribution": "poisson", "min_parameter": 1}],
-        [Benchmark, {"distribution": "nb", "min_parameter": 1}],
-        [Benchmark, {"distribution": "fisher"}]
-    ]
+    algo_settings = []
+    window_sizes = [7, 14, 28, 56, 112, 182, 357]
+    for window_size in window_sizes:
+        algo_settings.append([EARS, {"method": "C1", "window_size": window_size}])
+        algo_settings.append([EARS, {"method": "C2", "window_size": window_size}])
+        algo_settings.append([EARS, {"method": "C3", "window_size": window_size}])
+        algo_settings.append([RKI, {"window_size": window_size}])
+        algo_settings.append([Bayes, {"window_size": window_size}])
 
     # the settings for the syndrome counters
     syndrome_counter_settings = [
-        [BasicSyndromeCounting, {}]
+        [BasicSyndromeCounting, {"combos": 2}],
+        [BasicSyndromeCounting, {"combos": 1}]
     ]
 
     # perform evaluation
@@ -47,4 +50,5 @@ if __name__ == '__main__':
     )
 
     # print results
-    io.print_pretty_table(df[["algo_params", "macro-averaged parital AMOC 5%"]])
+    io.print_pretty_table(
+        df[["algo_class", "algo_params", "syndrome_counter_params", "macro-averaged parital AMOC 5%"]])

@@ -5,10 +5,6 @@ import numpy as np
 import pandas as pd
 from util import io
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 '''
 ***********************************************************************************************************
 ***********************************************************************************************************
@@ -56,7 +52,7 @@ class BasicSyndromeCounting:
         """
         Updates the syndrome count dataframe with the specified range of time slots (last time slot is inclusive). 
         The updated version is saved to the file system.
-        :param set_of_time_slots: a set of time slots
+        :param time_slot_set: a set of time slots
         """
 
         # Generate syndrome counts
@@ -107,11 +103,9 @@ class BasicSyndromeCounting:
         missing_time_slots = time_slots.difference(available_time_slots)
         if len(missing_time_slots) > 0:
             self.update_cache(missing_time_slots)
-
         selected_syndrome_df = self.syndrome_df[np.logical_and(self.syndrome_df["time_slot"] >= time_slot_start,
                                                                self.syndrome_df["time_slot"] <= time_slot_end)]
-
-        assert(len(selected_syndrome_df) == time_slot_end - time_slot_start + 1)
+        assert (len(selected_syndrome_df) == time_slot_end - time_slot_start + 1)
         return selected_syndrome_df
 
     '''
