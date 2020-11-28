@@ -210,7 +210,7 @@ if __name__ == '__main__':
                 ["novelty", [True]],
                 ["n_neighbors", [3, 5, 7, 10, 20, 40]],
                 ["algorithm", ["auto"]],
-                ["p", [1, 2, 3]],  # maybe more
+                ["p", [1, 2, 3]],
             ]
             param_combos = get_combinations(parameters)
             algo_settings = [
