@@ -161,7 +161,6 @@ All possible combinations of the following parameters have been tuned for the an
 
 
 ## Citation
-Coming soon
 
 ```
 @InProceedings{mk:IDA-21,
