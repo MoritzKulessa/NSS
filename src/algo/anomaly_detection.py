@@ -1,7 +1,11 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
+
+
 class SyndromeCountAnomalyDetector(object):
 
-    def __init__(self, syndrome_counter, anomaly_detector_class, anomaly_detector_parameters, incremental=True,
-                 normalize_data=False):
+    def __init__(self, syndrome_counter, anomaly_detector_class, anomaly_detector_parameters, incremental=True, normalize_data=False):
         """
         Initialize
         :param syndrome_counter: the module to access the syndrome counts
@@ -15,9 +19,7 @@ class SyndromeCountAnomalyDetector(object):
         self.normalize_data = normalize_data
         self.incremental = incremental
 
-        # Ensure that all syndrome counts have been computed
-        data_info = self.syndrome_counter.data_stream.get_info()
-        self.syndrome_counter.get_syndrome_df(data_info['first_time_slot'], data_info['last_time_slot'])
+        self.dataset = self._generate_dataset()
 
         # extract the library of the class
         if "sklearn" in str(self.anomaly_detector_class):
@@ -31,30 +33,57 @@ class SyndromeCountAnomalyDetector(object):
             till_timeslot = self.syndrome_counter.data_stream.get_info()["start_test_part"] - 1
             self.model = self._get_model(till_timeslot)
 
+    def _generate_dataset(self):
+        data_info = self.syndrome_counter.data_stream.get_info()
+        syndrome_df = self.syndrome_counter.get_syndrome_df(data_info['first_time_slot'], data_info['last_time_slot'])
+        syndrome_tss = list(syndrome_df["time_slot"])
+        syndrome_df = syndrome_df.drop("time_slot", axis=1)
+        env_df = self.syndrome_counter.data_stream.get_all_envs()
+        env_tss = list(env_df["time_slot"])
+        env_df = env_df.drop("time_slot", axis=1)
+
+        for i in range(len(syndrome_tss)):
+            assert (env_tss[i] == syndrome_tss[i])
+
+        if len(env_df.columns) == 0:
+            # no environmental variables
+            dataset = syndrome_df
+        else:
+            # with environmental variables --> one-hot encoding
+            enc = OneHotEncoder(handle_unknown='ignore')
+            enc.fit(env_df)
+            ohe_env = enc.transform(env_df.values).toarray()
+
+            new_data = [list(row) + list(ohe_env[i]) for i, row in enumerate(syndrome_df.values)]
+            dataset = pd.DataFrame(new_data, columns=list(syndrome_df.columns) + [str(i) for i in range(ohe_env.shape[1])])
+
+        return dataset
+
     def _normalize_data(self, df):
-        for column in self.normalize_dict:
+        all_vals = []
+        for column in df.columns:
             if self.normalize_dict[column]["max"] > self.normalize_dict[column]["min"]:
-                df[column] = (df[column] - self.normalize_dict[column]["min"]) / (
-                        self.normalize_dict[column]["max"] - self.normalize_dict[column]["min"])
+                vals = list((df[column] - self.normalize_dict[column]["min"]) / (self.normalize_dict[column]["max"] - self.normalize_dict[column]["min"]))
+                all_vals.append(vals)
+            else:
+                vals = list(df[column])
+                all_vals.append(vals)
+        return pd.DataFrame(np.array(all_vals).T, columns=list(df.columns))
 
     def _get_model(self, till_timeslot):
-        # obtain previous and current syndrome counts
-        first_time_slot = self.syndrome_counter.data_stream.get_info()["first_time_slot"]
-        syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, till_timeslot)
-        assert (syndrome_counts_df.iloc[-1][
-                    "time_slot"] == till_timeslot)  # assume that the syndrome counts df is sorted
-        syndrome_counts_df = syndrome_counts_df.drop("time_slot", axis=1)
+
+        train_df = pd.DataFrame(self.dataset[:(till_timeslot + 1)])
 
         if self.normalize_data:
             self.normalize_dict = {}
-            for column in syndrome_counts_df.columns:
+            for column in train_df.columns:
                 self.normalize_dict[column] = {}
-                self.normalize_dict[column]["min"] = syndrome_counts_df[column].min()
-                self.normalize_dict[column]["max"] = syndrome_counts_df[column].max()
-            self._normalize_data(syndrome_counts_df)
+                self.normalize_dict[column]["min"] = train_df[column].min()
+                self.normalize_dict[column]["max"] = train_df[column].max()
+            train_df = self._normalize_data(train_df)
 
         # fit anomaly detector
-        train_data = syndrome_counts_df.values
+        train_data = train_df.values
         anomaly_detector = self.anomaly_detector_class(**self.anomaly_detector_parameters)
 
         if self.detector_library == "sklearn":
@@ -72,16 +101,14 @@ class SyndromeCountAnomalyDetector(object):
         :param time_slot: the time slot for which the score is computed
         :return: the score for the given time slot
         """
-
         if self.incremental:
             anomaly_detector = self._get_model(time_slot - 1)
         else:
             anomaly_detector = self.model
 
-        # obtain test data
-        count_df = self.syndrome_counter.get_counts(time_slot)
+        count_df = self.dataset[time_slot:time_slot + 1]
         if self.normalize_data:
-            self._normalize_data(count_df)
+            count_df = self._normalize_data(count_df)
         test_data = count_df.iloc[-1].values.reshape(1, -1)
 
         if self.detector_library == "sklearn":

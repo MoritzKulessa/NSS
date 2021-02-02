@@ -72,10 +72,14 @@ def line_plot(x_vals, y_vals,
 
 def heatmap_plot(data,
                  ax=None,
-                 value_display=False):
+                 colorbar=True,
+                 cmap="winter",
+                 value_display=False,
+                 vmin=None,
+                 vmax=None):
     if ax is None: ax = get_axes()[0][0]
-    im = ax.imshow(data)
-    ax.figure.colorbar(im, ax=ax)
+    im = ax.imshow(data, cmap=cmap, vmin=vmin, vmax=vmax)
+    if colorbar: ax.figure.colorbar(im, ax=ax)
 
     if value_display:
         for i in range(data.shape[0]):
@@ -103,8 +107,7 @@ def scatter_plot(x_vals, y_vals,
 
 
 def get_axes(rows=1, cols=1, sharex=False, sharey=False, figsize_x=10, figsize_y=5):
-    _, axes = plt.subplots(rows, cols, figsize=(figsize_x, figsize_y * rows), squeeze=False, sharex=sharex,
-                           sharey=sharey)
+    _, axes = plt.subplots(rows, cols, figsize=(figsize_x, figsize_y * rows), squeeze=False, sharex=sharex, sharey=sharey)
     return axes
 
 
@@ -114,6 +117,10 @@ def show():
 
 def savefig(fname):
     plt.savefig(fname)
+
+
+def tight_layout():
+    plt.tight_layout(0, 0, 0)
 
 
 def set_standard(ax,

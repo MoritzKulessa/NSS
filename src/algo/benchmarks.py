@@ -10,7 +10,7 @@ from scipy import stats
 
 class Benchmark:
 
-    def __init__(self, syndrome_counter, distribution="nb", min_parameter=1):
+    def __init__(self, syndrome_counter, distribution="nb", min_parameter=1, incremental=True):
         """
         Initializing
         :param syndrome_counter: the module producing syndrome counts
@@ -20,6 +20,12 @@ class Benchmark:
         self.syndrome_counter = syndrome_counter
         self.distribution = distribution
         self.min_parameter = min_parameter
+        self.incremental = incremental
+
+        # pre-compute syndrome counts
+        first_time_slot = self.syndrome_counter.data_stream.get_info()["first_time_slot"]
+        last_time_slot = self.syndrome_counter.data_stream.get_info()["last_time_slot"]
+        self.syndrome_counter.get_syndrome_df(first_time_slot, last_time_slot)
 
     '''
     ***********************************************************************************************************
@@ -34,16 +40,21 @@ class Benchmark:
         :return: the score for the given time slot
         """
 
-        # obtain previous and current syndrome counts
+        # obtain previous counts
         first_time_slot = self.syndrome_counter.data_stream.get_info()["first_time_slot"]
-        syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, time_slot)
-        assert (syndrome_counts_df.iloc[-1]["time_slot"] == time_slot)  # assume that the syndrome counts df is sorted
+        if self.incremental:
+            syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, time_slot - 1)
+        else:
+            start_test_part = self.syndrome_counter.data_stream.get_info()["start_test_part"]
+            syndrome_counts_df = self.syndrome_counter.get_syndrome_df(first_time_slot, start_test_part - 1)
         syndrome_counts_df = syndrome_counts_df.drop("time_slot", axis=1)
+
+        # obtain current time slots
+        check_counts_df = self.syndrome_counter.get_counts(time_slot)
 
         # Load the total number of cases for the previous time slots and the current time slot for the fisher benchmark
         if self.distribution == "fisher":
-            n_cases_before = sum([len(cases) for (cases, _) in
-                                  self.syndrome_counter.data_stream.get_history(first_time_slot, time_slot - 1)])
+            n_cases_before = sum([len(cases) for (cases, _) in self.syndrome_counter.data_stream.get_history(first_time_slot, time_slot - 1)])
             n_cases_time_slot = len(self.syndrome_counter.data_stream.get_cases(time_slot))
 
         # Compute for every observed syndrome of the current time slot a p-value
@@ -51,10 +62,8 @@ class Benchmark:
         for i in range(syndrome_counts_df.values.shape[1]):
 
             # obtain previous counts
-            counts = syndrome_counts_df.values[:, i]
-            train_counts = counts[:-1]
-            check_val = counts[-1]
-
+            train_counts = syndrome_counts_df.values[:, i]
+            check_val = check_counts_df.values[0, i]
             if check_val == 0:
                 continue
 

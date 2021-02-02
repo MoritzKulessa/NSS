@@ -21,6 +21,16 @@ def _get_ground_truth(outbreaks, size):
             gt[i] = True
     return gt
 
+def _combine_results(results):
+    scores = []
+    outbreaks = []
+    for result in results:
+        for [s, e] in result["outbreaks"]:
+            outbreaks.append([s+len(scores), e+len(scores)])
+        scores += list(result["scores"])
+    return {"scores": scores, "outbreaks": outbreaks}
+
+
 
 '''
 ***********************************************************************************************************
@@ -29,25 +39,48 @@ def _get_ground_truth(outbreaks, size):
 '''
 
 
-def evaluate_results(results):
+def macro_AAUC(results, max_FAR=0.05):
+    amoc_aucs = []
+    for result in results:
+        roc_values = compute_roc_values(result["scores"], result["outbreaks"])
+        amoc_auc = compute_area_under_curve(roc_values, x_measure="FAR*" + str(max_FAR), y_measure="detectionDelay")
+        amoc_aucs.append(amoc_auc)
+    return {"macro AMOC " + str(max_FAR): np.mean(amoc_aucs), "single AMOC " + str(max_FAR): amoc_aucs}
+
+
+def micro_AAUC(results, max_FAR=0.05):
+    combined_result = _combine_results(results)
+    roc_values = compute_roc_values(combined_result["scores"], combined_result["outbreaks"])
+    micro_amoc_auc = compute_area_under_curve(roc_values, x_measure="FAR*0.05", y_measure="detectionDelay")
+
+    return {"micro AMOC " + str(max_FAR): micro_amoc_auc,
+            "micro FAR": roc_values["FAR"],
+            "micro detectionDelay": roc_values["detectionDelay"],
+            "micro TPR": roc_values["TPR"]}
+
+
+'''
+***********************************************************************************************************
+***********************************************************************************************************
+***********************************************************************************************************
+'''
+
+
+def evaluate_results(results, measure_funcs=None):
     """
     Computes the measurements for the given results.
     :param results: an array of results. Each result is a dictionary containing the scores and outbreaks
+    :param measure_funcs: list of measures which are computed, each item is a pair containing the measure function and its parameters. If None macro AAUC 5% will be computed
     :return: a dictionary, containing the name of the measure as the key and the measure-value as the value
     """
-    macro_amoc_auc5 = []
-    for result in results:
 
-        if len(result["outbreaks"]) == 0:
-            macro_amoc_auc5.append(np.nan)
-            continue
+    if measure_funcs is None: measure_funcs = [[macro_AAUC, {"max_FAR": 0.05}], [micro_AAUC, {"max_FAR": 0.05}]]
 
-        # Compute area under partial AMOC-curve (FAR <= 5%)
-        roc_values = compute_roc_values(result["scores"], result["outbreaks"])
-        amoc_auc5 = compute_area_under_curve(roc_values, x_measure="FAR*0.05", y_measure="detectionDelay")
-        macro_amoc_auc5.append(amoc_auc5)
-
-    return {"macro-averaged parital AMOC 5%": np.mean(macro_amoc_auc5)}
+    all_measure_results = {}
+    for measure_func, params in measure_funcs:
+        cur_measure_results = measure_func(results, **params)
+        all_measure_results.update(cur_measure_results)
+    return all_measure_results
 
 
 '''
